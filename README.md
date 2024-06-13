@@ -8,7 +8,7 @@ An API script for Stack Overflow for Teams that creates a JSON export of users, 
 * Operating system: Linux, MacOS, or Windows
 
 ## Setup
-[Download](https://github.com/jklick-so/so4t_data_export/archive/refs/heads/main.zip) and unpack the contents of this repository
+[Download](https://github.com/StackExchange/so4t_data_export/archive/refs/heads/main.zip) and unpack the contents of this repository
 
 **Installing Dependencies**
 
