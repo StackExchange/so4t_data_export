@@ -205,7 +205,11 @@ class V2Client(object):
             self.team_slug = args.url.split("https://stackoverflowteams.com/c/")[1]
             self.token = args.token
             self.api_key = None
-            self.headers = {'X-API-Access-Token': self.token}
+            #Updated User-Agent
+            self.headers = {
+                'X-API-Access-Token': self.token,
+                'User-Agent': 'so4t_data_export/1.0 (http://your-app-url.com; your-contact@email.com)'
+            }
             if not self.token:
                 print("Missing required argument. Please provide an API token.")
                 print("See --help for more information")
@@ -216,7 +220,11 @@ class V2Client(object):
             self.team_slug = None
             self.token = None
             self.api_key = args.key
-            self.headers = {'X-API-Key': self.api_key}
+            #Updated User-Agent 
+            self.headers = {
+                'X-API-Key': self.api_key,
+                'User-Agent': 'so4t_data_export/1.0 (http://your-app-url.com; your-contact@email.com)'
+            }
             if not self.api_key:
                 print("Missing required argument. Please provide an API key.")
                 print("See --help for more information")
@@ -231,11 +239,14 @@ class V2Client(object):
         ssl_verify = True
 
         params = {}
+        headers = {}    
         if self.token:
-            headers = {'X-API-Access-Token': self.token}
+            #Updated User-Agent
+            headers = {'X-API-Access-Token': self.token, 'User-Agent': 'so4t_data_export/1.0 (http://your-app-url.com; your-contact@email.com)'}
             params['team'] = self.team_slug
         else:
-            headers = {'X-API-Key': self.api_key}
+            #Updated User-Agent
+            headers = {'X-API-Key': self.api_key, 'User-Agent': 'so4t_data_export/1.0 (http://your-app-url.com; your-contact@email.com)'}
 
         print("Testing API 2.3 connection...")
         try:
@@ -390,6 +401,11 @@ class V3Client(object):
             raise SystemExit
         else:
             self.token = args.token
+            #Updated User-Agent
+            self.headers = {
+                'Authorization': f'Bearer {self.token}',
+                'User-Agent': 'so4t_data_export/1.0 (http://your-app-url.com; your-contact@email.com)'
+            }
 
         if "stackoverflowteams.com" in args.url:
             self.team_slug = args.url.split("https://stackoverflowteams.com/c/")[1]
