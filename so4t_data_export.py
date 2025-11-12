@@ -1,5 +1,5 @@
 '''
-This Python script is a working proof of concept example of using Stack Overflow APIs for Data export. 
+This Python script is a working proof of concept example of using Stack Internal APIs for Data export. 
 If you run into difficulties, please leave feedback in the Github Issues.
 '''
 
@@ -24,22 +24,22 @@ def get_args():
     parser = argparse.ArgumentParser(
         prog='so4t_data_export.py',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description= 'Export data from a Stack Overflow for Teams instance',
-        epilog = 'Example for Stack Overflow Business: \n'
+        description= 'Export data from a Stack Internal instance',
+        epilog = 'Example for Stack Internal (Business): \n'
                 'python3 so4t_data_export.py --url "https://stackoverflowteams.com/c/TEAM-NAME" '
                 '--token "YOUR_TOKEN" \n\n'
-                'Example for Stack Overflow Enterprise: \n'
+                'Example for Stack Internal (Enterprise): \n'
                 'python3 so4t_data_export.py --url "https://SUBDOMAIN.stackenterprise.co" '
                 '--key "YOUR_KEY" --token "YOUR_TOKEN"\n\n')
     parser.add_argument('--url', 
                         type=str,
-                        help='[REQUIRED] Base URL for your Stack Overflow for Teams instance.')
+                        help='[REQUIRED] Base URL for your Stack Internal instance.')
     parser.add_argument('--token',
                         type=str,
-                        help='[REQUIRED] API token for your Stack Overflow for Teams instance.')
+                        help='[REQUIRED] API token for your Stack Internal instance.')
     parser.add_argument('--key',
                     type=str,
-                    help='API key value. Only required if using Stack Overflow Enterprise.')
+                    help='API key value. Only required if using Stack Internal (Enterprise).')
 
     return parser.parse_args()
 
@@ -62,17 +62,17 @@ def data_collector(args):
 
 def get_users(v2client):
 
-    if v2client.soe: # Stack Overflow Enterprise requires the generation of a custom filter
+    if v2client.soe: # Stack Internal (Enterprise) requires the generation of a custom filter
         filter_attributes = [
                 "user.about_me",
                 "user.answer_count",
                 "user.down_vote_count",
                 "user.question_count",
                 "user.up_vote_count",
-                "user.email" # only available for Stack Overflow Enterprise
+                "user.email" # only available for Stack Internal (Enterprise)
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!6WPIommaBqvsI'
 
     users = v2client.get_all_users(filter_string)
@@ -82,7 +82,7 @@ def get_users(v2client):
 
 def get_questions_answers_comments(v2client, v3client):
 
-    if v2client.soe: # Stack Overflow Enterprise requires the generation of a custom filter
+    if v2client.soe: # Stack Internal (Enterprise) requires the generation of a custom filter
         filter_attributes = [
             "answer.body",
             "answer.body_markdown",
@@ -109,7 +109,7 @@ def get_questions_answers_comments(v2client, v3client):
             "question.up_vote_count"
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!X9DEEiFwy0OeSWoJzb.QMqab2wPSk.X2opZDa2L'
     questions = v2client.get_all_questions(filter_string)
 
@@ -152,7 +152,7 @@ def get_articles(v2client):
             "comment.link"
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!*Mg4Pjg9LXr9d_(v'
 
     articles = v2client.get_all_articles(filter_string)
@@ -162,13 +162,13 @@ def get_articles(v2client):
 
 def get_tags(v2client, v3client):
 
-    if v2client.soe: # Stack Overflow Enterprise requires the generation of a custom filter
+    if v2client.soe: # Stack Internal (Enterprise) requires the generation of a custom filter
         filter_attributes = [
             "tag.last_activity_date",
             "tag.synonyms"
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!nNPvSNMp-i'
     
     tags = v2client.get_all_tags(filter_string=filter_string)
@@ -349,7 +349,7 @@ class V2Client(object):
 
     def get_items(self, endpoint_url, params={}):
 
-        if not self.soe: # SO Basic and Business instances require a team slug in the params
+        if not self.soe: # Stack Internal (Business) or Basic instances require a team slug in the params
             params['team'] = self.team_slug
 
         items = []
