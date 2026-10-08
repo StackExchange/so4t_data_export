@@ -1,47 +1,39 @@
-# Stack Internal Data Export (so4t_data_export)
-An API script for Stack Internal that creates a JSON export of users, user groups, tags, articles, questions, answers, and comments. It uses a combination of both versions of the API (i.e., 2.3 and 3) in order to create the most comprehensive export possible.
+# Stack Internal Data Export
 
+Export Stack Internal data using **API v3 only**. The [standalone HTML exporter](so4t_data_export.html) is the version to use. It needs no Python installation, server, build step, or external JavaScript or CSS. The Python script and `requirements.txt` remain for historical command-line use; new users should use the HTML page.
 
-## Requirements
-* A Stack Internal instance (Basic, Business, or Enterprise)
-* Python 3.x ([download](https://www.python.org/downloads/))
-* Operating system: Linux, MacOS, or Windows
+## Use the HTML exporter
 
-## Setup
-[Download](https://github.com/StackExchange/so4t_data_export/archive/refs/heads/main.zip) and unpack the contents of this repository
+1. Download this repository and open `so4t_data_export.html` in a current browser.
+2. Enter your Stack Internal site URL:
+   - Enterprise: `https://YOUR-SITE.stackenterprise.co`
+   - Basic or Business: `https://stackoverflowteams.com/c/TEAM-NAME`
+3. Enter an API v3 access token with read access to the data you need. Enterprise token setup is documented in your site's `/api/docs/authentication` page. Basic and Business users can use a personal access token.
+4. Select **Start export** and keep the page open until the ZIP downloads.
 
-**Installing Dependencies**
+The ZIP contains `users.json`, `user_groups.json`, `tags.json`, `articles.json`, and `questions_answers_comments.json`. Questions contain their answers and comments; articles contain comments; tags contain synonyms and subject matter experts. These files use **API v3 field names and response shapes**, so they are not byte-for-byte compatible with older API 2.3 exports.
 
-* Open a terminal window (or, for Windows, a command prompt)
-* Navigate to the directory where you unpacked the files
-* Install the dependencies: `pip3 install -r requirements.txt`
+The page makes read-only requests directly from your browser to your instance's v3 API. The token is not saved in browser storage or included in the download. Browser security requires the API to allow cross-origin requests from the page. If the browser reports a CORS or network error, ask your instance administrator to allow the page's origin for API v3 requests; a local `file://` page has a `null` origin. Some browsers or instances may require you to serve the same HTML file from an allowed HTTPS origin. The exporter cannot bypass an API's CORS policy.
 
-**API Authentication**
+## Scope and limits
 
-For the Business tier, you'll need a [personal access token](https://stackoverflowteams.help/en/articles/4385859-stack-overflow-for-teams-api) (PAT). You'll need to obtain an API key and an access token for Enterprise. Documentation for creating an Enterprise key and token can be found within your instance at this url: `https://[your_site]/api/docs/authentication`
+- The exporter retrieves every page of users, user groups, tags, articles, and questions, then fetches their v3 detail records and related answers and comments.
+- Fields restricted by your permissions, such as user email addresses, appear only when your token can read them.
+- Images are not downloaded. The v3 schema supplied for this project has no list endpoint for collections or communities, so those are not exported.
+- Large instances may take time and browser memory. Keep the tab open while the export runs; use **Cancel** to stop requests.
+- If any request fails, the page stops and does not download a partial export. Check the error and run it again.
 
-**Generating an Access Token (Enterprise)**
+## Historical Python script
 
-For secure Access Token generation, follow the [Secure API Token Generation with OAuth and PKCE](https://support.stackenterprise.co/support/solutions/articles/22000294542-secure-api-token-generation-with-oauth-and-pkce) guide.
+`so4t_data_export.py` is retained for historical command-line workflows. It has also been updated to use API v3 exclusively, but the standalone HTML page is the recommended tool.
 
-**Note on Access Token Requirements:**
-While API v3 now generally allows querying with just an API key for most GET requests, certain paths and data (e.g., `/images` and the email attribute on a `User` object) still specifically require an Access Token for access. If you encounter permissions errors on such paths, ensure you are using an Access Token.
+```sh
+pip3 install -r requirements.txt
+python3 so4t_data_export.py --url "https://YOUR-SITE.stackenterprise.co" --token "YOUR_TOKEN"
+```
 
-## Usage
-In a terminal window, navigate to the directory where you unpacked the script. 
-Run the script using the following format, replacing the URL, token, and/or key with your own:
-* For Basic and Business: `python3 so4t_data_export.py --url "https://stackoverflowteams.com/c/TEAM-NAME" --token "YOUR_TOKEN"`
-* For Enterprise: `python3 so4t_data_export.py --url "https://SUBDOMAIN.stackenterprise.co" --key "YOUR_KEY" --token "YOUR_TOKEN"`
+The script writes the same five JSON filenames in the current directory. For Basic or Business, pass the full `https://stackoverflowteams.com/c/TEAM-NAME` URL. No API v2 filter or API key argument is used.
 
-The script can take several minutes to run, particularly as it gathers data via the API. As it runs, it will update the terminal window with the tasks it performs.
+## Support and security
 
-When the script completes, it will indicate the JSON files will be created in the same directory where the script is located. The files will be named articles.json, questions_answers_comments.json, tags.json, user_groups.json, and users.json.
-
-## Known Limitations
-* Images are not exported
-* Collections and Communities do not have an API endpoint, so they are not exported
-
-## Support, security, and legal
-If you encounter problems using the script, please leave feedback in the Github Issues. You can also clone and change the script to suit your needs. It is provided as-is, with no warranty or guarantee of any kind.
-
-All data obtained via the API is handled locally on the device from which the script is run. The script does not transmit data to other parties like Stack Overflow. All API calls performed are read-only, so there is no risk of editing or adding content to your Stack Internal instance.
+Please report problems in [GitHub Issues](https://github.com/StackExchange/so4t_data_export/issues). The software is provided as-is under the [license](LICENSE). API calls are read-only and data is processed locally in your browser or Python process. Downloads can contain sensitive private data, so store them appropriately.

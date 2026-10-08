@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stack Internal data export</title>
+  <style>
+    /* Stacks-inspired, self-contained styling: no CDN or build step is required. */
+    :root { --brand-color-orange:#ff5e00; --brand-color-black:#201c1d; --brand-color-off-white:#f0efee; --brand-color-white:#fff; --border:#c9c7c5; --muted:#595653; --blue:#00165e; --focus:#5074ef; --danger:#a42325; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--brand-color-off-white); color:var(--brand-color-black); font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .topbar { height:10px; background:var(--brand-color-orange); }
+    .shell { width:min(920px,calc(100% - 32px)); margin:0 auto; }
+    header { padding:48px 0 26px; }
+    .eyebrow { color:#6e1527; font-size:13px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+    h1 { margin:10px 0 8px; font-size:clamp(30px,5vw,44px); line-height:1.16; letter-spacing:-.03em; }
+    h2 { margin:0 0 6px; font-size:20px; line-height:1.25; }
+    p { margin:0 0 14px; }
+    .intro { max-width:650px; color:var(--muted); font-size:18px; }
+    .panel { background:var(--brand-color-white); border:1px solid var(--border); border-radius:10px; padding:28px; margin-bottom:18px; box-shadow:0 2px 8px #201c1d0a; }
+    .step { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; margin-right:8px; border-radius:50%; background:var(--brand-color-orange); color:var(--brand-color-black); font-size:14px; font-weight:800; vertical-align:middle; }
+    .s-form-group { margin:0 0 20px; }
+    .s-label { display:block; margin-bottom:7px; font-weight:650; }
+    .s-input { display:block; width:100%; padding:11px 12px; border:1px solid #898580; border-radius:6px; background:#fff; color:var(--brand-color-black); font:inherit; }
+    .s-input:focus, .s-btn:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+    .help { margin:6px 0 0; color:var(--muted); font-size:13px; }
+    .s-btn { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:9px 17px; border:1px solid #665e57; border-radius:6px; background:#fff; color:var(--brand-color-black); font-family:inherit; font-size:15px; font-weight:650; line-height:1.2; cursor:pointer; }
+    .s-btn:hover:not(:disabled) { background:#f0efee; }
+    .s-btn__primary { border-color:#b84200; background:var(--brand-color-orange); color:#201c1d; }
+    .s-btn__primary:hover:not(:disabled) { background:#e95600; }
+    .s-btn:disabled { cursor:not-allowed; opacity:.55; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .s-notice { margin-top:18px; padding:13px 15px; border:1px solid #93aad8; border-radius:6px; background:#e9effc; color:#00165e; }
+    .s-notice__danger { border-color:#d68888; background:#fdf0ef; color:#711719; }
+    .s-notice__success { border-color:#9fb967; background:#f0f6e2; color:#263603; }
+    .status { margin-top:20px; }
+    .status[hidden], .s-notice[hidden] { display:none; }
+    .status-line { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; margin:0 0 8px; }
+    progress { width:100%; height:13px; accent-color:var(--brand-color-orange); }
+    .counts { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; padding:0; margin:20px 0 0; list-style:none; }
+    .counts li { padding:13px 10px; border:1px solid #dedbd8; border-radius:6px; background:#faf9f8; }
+    .counts strong { display:block; font-size:20px; }
+    .counts span { color:var(--muted); font-size:12px; }
+    .details { color:var(--muted); font-size:14px; }
+    footer { padding:14px 0 40px; color:var(--muted); font-size:13px; }
+    footer a { color:var(--blue); }
+    @media (max-width:650px) { header{padding-top:34px} .panel{padding:20px} .counts{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  </style>
+</head>
+<body>
+  <div class="topbar" aria-hidden="true"></div>
+  <div class="shell">
+    <header>
+      <div class="eyebrow">Stack Internal · API v3</div>
+      <h1>Export your knowledge data</h1>
+      <p class="intro">Download users, user groups, tags, articles, questions, answers, and comments as JSON in one ZIP file.</p>
+    </header>
+    <main>
+      <section class="panel" aria-labelledby="connect-title">
+        <h2 id="connect-title"><span class="step" aria-hidden="true">1</span> Connect to your instance</h2>
+        <p class="details">The export runs in this browser. Your access token stays in this page and is sent only to the API for the instance you enter.</p>
+        <form id="export-form">
+          <div class="s-form-group">
+            <label class="s-label" for="instance-url">Stack Internal URL</label>
+            <input class="s-input" id="instance-url" name="instance-url" type="url" inputmode="url" required autocomplete="url" placeholder="https://your-site.stackenterprise.co" aria-describedby="url-help">
+            <p class="help" id="url-help">Enterprise: your site URL. Basic or Business: https://stackoverflowteams.com/c/TEAM-NAME</p>
+          </div>
+          <div class="s-form-group">
+            <label class="s-label" for="access-token">API v3 access token</label>
+            <input class="s-input" id="access-token" name="access-token" type="password" required autocomplete="off" spellcheck="false" aria-describedby="token-help">
+            <p class="help" id="token-help">Use a token with permission to read the data you want to export. Private fields such as email appear only when your token can access them.</p>
+          </div>
+          <div class="actions">
+            <button class="s-btn s-btn__primary" id="start-button" type="submit">Start export</button>
+            <button class="s-btn" id="cancel-button" type="button" disabled>Cancel</button>
+          </div>
+        </form>
+        <div id="notice" class="s-notice" role="status" hidden></div>
+      </section>
+      <section class="panel" aria-labelledby="progress-title">
+        <h2 id="progress-title"><span class="step" aria-hidden="true">2</span> Download your export</h2>
+        <p class="details">The page gathers every v3 list page, then fetches details and related comments. Large instances can take a while. Keep this tab open until the ZIP download starts.</p>
+        <div id="status" class="status" aria-live="polite" hidden>
+          <div class="status-line"><strong id="status-text">Preparing…</strong><span id="status-count"></span></div>
+          <progress id="progress" max="1"></progress>
+        </div>
+        <ul class="counts" aria-label="Exported item counts">
+          <li><strong id="count-users">—</strong><span>Users</span></li>
+          <li><strong id="count-groups">—</strong><span>User groups</span></li>
+          <li><strong id="count-tags">—</strong><span>Tags</span></li>
+          <li><strong id="count-articles">—</strong><span>Articles</span></li>
+          <li><strong id="count-questions">—</strong><span>Questions</span></li>
+        </ul>
+      </section>
+    </main>
+    <footer>Read-only API requests · API v3 only · <a href="https://github.com/StackExchange/so4t_data_export">Project and help</a></footer>
+  </div>
+  <script>
+  (() => {
+    'use strict';
+    const form = document.getElementById('export-form');
+    const startButton = document.getElementById('start-button');
+    const cancelButton = document.getElementById('cancel-button');
+    const notice = document.getElementById('notice');
+    const status = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    const statusCount = document.getElementById('status-count');
+    const progress = document.getElementById('progress');
+    let controller = null;
+
+    function apiBase(raw) {
+      const url = new URL(raw.trim());
+      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+        throw new Error('Enter an HTTPS site URL without credentials, a query, or a fragment.');
+      }
+      const path = url.pathname.replace(/\/+$/, '');
+      if (url.hostname.toLowerCase() === 'stackoverflowteams.com') {
+        const match = /^\/c\/([^/]+)$/.exec(path);
+        if (!match) throw new Error('For Basic or Business, enter the full /c/TEAM-NAME URL.');
+        return `https://api.stackoverflowteams.com/v3/teams/${encodeURIComponent(decodeURIComponent(match[1]))}`;
+      }
+      if (path && path !== '/api/v3') throw new Error('For Enterprise, enter the site URL without a page path.');
+      return `${url.origin}/api/v3`;
+    }
+
+    function showNotice(message, kind = 'info') {
+      notice.textContent = message;
+      notice.className = `s-notice s-notice__${kind}`;
+      notice.hidden = false;
+      notice.setAttribute('role', kind === 'danger' ? 'alert' : 'status');
+    }
+
+    function updateProgress(label, done, total) {
+      status.hidden = false;
+      statusText.textContent = label;
+      statusCount.textContent = total ? `${done} of ${total}` : '';
+      if (total) { progress.max = total; progress.value = done; }
+      else progress.removeAttribute('value');
+    }
+
+    const pause = (ms, signal) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { signal.removeEventListener('abort', stop); resolve(); }, ms);
+      function stop() { clearTimeout(timer); reject(new DOMException('Export canceled', 'AbortError')); }
+      signal.addEventListener('abort', stop, { once:true });
+    });
+
+    function createClient(base, token, signal) {
+      return async function get(path, params) {
+        const url = new URL(base + path);
+        for (const [key, value] of Object.entries(params || {})) url.searchParams.set(key, String(value));
+        for (let attempt = 0; attempt < 4; attempt++) {
+          let response;
+          try {
+            response = await fetch(url, { method:'GET', headers:{ Authorization:`Bearer ${token}`, Accept:'application/json' }, signal, credentials:'omit', cache:'no-store' });
+          } catch (error) {
+            if (error.name === 'AbortError') throw error;
+            throw new Error('The browser could not reach the API. Check the URL, network, and whether the API allows requests from this page (CORS).');
+          }
+          if (response.ok) {
+            try { return await response.json(); }
+            catch { throw new Error(`Invalid JSON returned by ${path}.`); }
+          }
+          if ((response.status === 429 || response.status >= 500) && attempt < 3) {
+            const retryAfter = Number(response.headers.get('Retry-After'));
+            await pause(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 30000) : 1000 * 2 ** attempt, signal);
+            continue;
+          }
+          throw new Error(`API v3 request failed (${response.status}) at ${path}. Check token access and try again.`);
+        }
+      };
+    }
+
+    async function pages(get, path) {
+      const all = [];
+      for (let page = 1; ; page++) {
+        const result = await get(path, { page, pageSize:100 });
+        if (!result || !Array.isArray(result.items) || !Number.isInteger(result.totalPages) || result.totalPages < 0) {
+          throw new Error(`Unexpected paginated response from ${path}.`);
+        }
+        all.push(...result.items);
+        if (page >= result.totalPages) return all;
+        if (!result.items.length) throw new Error(`Empty page before the end of ${path}.`);
+      }
+    }
+
+    async function mapLimited(items, limit, label, worker, signal) {
+      const results = new Array(items.length);
+      let next = 0, done = 0;
+      updateProgress(label, done, items.length);
+      await Promise.all(Array.from({length:Math.min(limit,items.length)}, async () => {
+        while (next < items.length) {
+          if (signal.aborted) throw new DOMException('Export canceled', 'AbortError');
+          const index = next++;
+          results[index] = await worker(items[index]);
+          updateProgress(label, ++done, items.length);
+        }
+      }));
+      return results;
+    }
+
+    async function collect(get, signal) {
+      updateProgress('Finding users…');
+      const userSummaries = await pages(get, '/users');
+      const users = await mapLimited(userSummaries, 4, 'Fetching user details…', user => get(`/users/${user.id}`), signal);
+      document.getElementById('count-users').textContent = users.length.toLocaleString();
+
+      updateProgress('Finding user groups…');
+      const groups = await pages(get, '/user-groups');
+      document.getElementById('count-groups').textContent = groups.length.toLocaleString();
+
+      updateProgress('Finding tags…');
+      const tagSummaries = await pages(get, '/tags');
+      const tags = await mapLimited(tagSummaries, 4, 'Fetching tags and synonyms…', async tag => {
+        const detail = await get(`/tags/${tag.id}`);
+        detail.synonyms = tag.hasSynonyms ? await pages(get, `/tags/${tag.id}/synonyms`) : [];
+        return detail;
+      }, signal);
+      document.getElementById('count-tags').textContent = tags.length.toLocaleString();
+
+      updateProgress('Finding articles…');
+      const articleSummaries = await pages(get, '/articles');
+      const articles = await mapLimited(articleSummaries, 4, 'Fetching articles and comments…', async article => {
+        const detail = await get(`/articles/${article.id}`);
+        detail.comments = article.commentCount ? await get(`/articles/${article.id}/comments`) : [];
+        return detail;
+      }, signal);
+      document.getElementById('count-articles').textContent = articles.length.toLocaleString();
+
+      updateProgress('Finding questions…');
+      const questionSummaries = await pages(get, '/questions');
+      const questions = await mapLimited(questionSummaries, 4, 'Fetching questions, answers, and comments…', async question => {
+        const detail = await get(`/questions/${question.id}`);
+        detail.comments = question.commentCount ? await get(`/questions/${question.id}/comments`) : [];
+        const answerSummaries = question.answerCount ? await pages(get, `/questions/${question.id}/answers`) : [];
+        detail.answers = [];
+        for (const answer of answerSummaries) {
+          const item = await get(`/questions/${question.id}/answers/${answer.id}`);
+          item.comments = answer.commentCount ? await get(`/questions/${question.id}/answers/${answer.id}/comments`) : [];
+          detail.answers.push(item);
+        }
+        return detail;
+      }, signal);
+      document.getElementById('count-questions').textContent = questions.length.toLocaleString();
+      return { users, user_groups:groups, tags, articles, questions_answers_comments:questions };
+    }
+
+    const encoder = new TextEncoder();
+    const crcTable = (() => {
+      const table = new Uint32Array(256);
+      for (let n=0; n<256; n++) { let c=n; for (let k=0; k<8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; table[n]=c>>>0; }
+      return table;
+    })();
+    function crc32(bytes) { let c=0xffffffff; for (const b of bytes) c=crcTable[(c^b)&255]^(c>>>8); return (c^0xffffffff)>>>0; }
+    function zipFiles(files) {
+      const parts = [], directory = [];
+      let offset = 0;
+      const now = new Date();
+      const dosTime = (now.getHours()<<11) | (now.getMinutes()<<5) | (Math.floor(now.getSeconds()/2));
+      const dosDate = ((Math.max(1980,now.getFullYear())-1980)<<9) | ((now.getMonth()+1)<<5) | now.getDate();
+      for (const [name, value] of Object.entries(files)) {
+        const filename = encoder.encode(name), data = encoder.encode(JSON.stringify(value,null,2)+'\n');
+        if (data.length > 0xffffffff || offset + data.length + 30 + filename.length > 0xffffffff) throw new Error('Export exceeds the ZIP file size limit.');
+        const crc = crc32(data);
+        const local = new Uint8Array(30 + filename.length), h = new DataView(local.buffer);
+        h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true);
+        h.setUint16(10,dosTime,true); h.setUint16(12,dosDate,true); h.setUint32(14,crc,true);
+        h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,filename.length,true);
+        local.set(filename,30); parts.push(local,data);
+        const central = new Uint8Array(46+filename.length), c = new DataView(central.buffer);
+        c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true);
+        c.setUint16(12,dosTime,true); c.setUint16(14,dosDate,true); c.setUint32(16,crc,true);
+        c.setUint32(20,data.length,true); c.setUint32(24,data.length,true); c.setUint16(28,filename.length,true);
+        c.setUint32(42,offset,true); central.set(filename,46); directory.push(central);
+        offset += local.length + data.length;
+      }
+      const end = new Uint8Array(22), e = new DataView(end.buffer);
+      e.setUint32(0,0x06054b50,true); e.setUint16(8,directory.length,true); e.setUint16(10,directory.length,true);
+      e.setUint32(12,directory.reduce((size,part)=>size+part.length,0),true); e.setUint32(16,offset,true);
+      return new Blob([...parts,...directory,end],{type:'application/zip'});
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (controller) return;
+      let base;
+      try { base = apiBase(document.getElementById('instance-url').value); }
+      catch (error) { showNotice(error.message,'danger'); return; }
+      const token = document.getElementById('access-token').value.trim();
+      if (!token) { showNotice('Enter an API v3 access token.','danger'); return; }
+      controller = new AbortController();
+      startButton.disabled = true; cancelButton.disabled = false; notice.hidden = true;
+      try {
+        const data = await collect(createClient(base,token,controller.signal),controller.signal);
+        updateProgress('Preparing ZIP download…');
+        const blob = zipFiles({
+          'users.json':data.users, 'user_groups.json':data.user_groups, 'tags.json':data.tags,
+          'articles.json':data.articles, 'questions_answers_comments.json':data.questions_answers_comments
+        });
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl; link.download = `stack-internal-export-${new Date().toISOString().slice(0,10)}.zip`;
+        document.body.append(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl),60000);
+        document.getElementById('access-token').value = '';
+        updateProgress('Export complete',1,1);
+        showNotice('Export complete. Your ZIP download should begin now.','success');
+      } catch (error) {
+        if (error.name === 'AbortError') { updateProgress('Export canceled'); showNotice('Export canceled. No file was downloaded.'); }
+        else { controller.abort(); updateProgress('Export stopped'); showNotice(error.message || 'Export failed.','danger'); }
+      } finally { controller = null; startButton.disabled = false; cancelButton.disabled = true; }
+    });
+    cancelButton.addEventListener('click', () => controller?.abort());
+  })();
+  </script>
+</body>
+</html>
